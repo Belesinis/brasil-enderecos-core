@@ -33,3 +33,10 @@
 - [x] Exibir encaminhamento claro para o painel e o cadastro de endereços.
 - [x] Validar acessibilidade, responsividade, estados de carregamento e navegação.
 - [x] Criar checkpoint após validar a nova tela.
+
+## Publicação no GitHub
+
+- [ ] Habilitar a integração do GitHub para a exportação.
+- [ ] Exportar o projeto para o repositório público `@belesinis/brasil-enderecos-core`.
+- [ ] Confirmar que nenhum segredo ou arquivo de ambiente foi incluído.
+- [ ] Entregar o link público do repositório.
