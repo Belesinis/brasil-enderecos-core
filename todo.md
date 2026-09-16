@@ -25,3 +25,11 @@
 - [x] Criar testes Vitest cobrindo criação, atualização, arquivamento, restauração, auditoria e validações de domínio.
 - [x] Executar revisão objetiva de acessibilidade, responsividade, segurança e desempenho e aplicar correções necessárias.
 - [x] Salvar checkpoint final após concluir os itens pendentes e reler o todo.md.
+
+## Nova solicitação — tela de entrada
+
+- [x] Criar uma tela de entrada inicial com identidade visual do Brasil Endereços Core.
+- [x] Integrar o botão de acesso ao fluxo de autenticação existente.
+- [x] Exibir encaminhamento claro para o painel e o cadastro de endereços.
+- [x] Validar acessibilidade, responsividade, estados de carregamento e navegação.
+- [x] Criar checkpoint após validar a nova tela.
