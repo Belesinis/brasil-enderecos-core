@@ -36,7 +36,7 @@
 
 ## Publicação no GitHub
 
-- [ ] Habilitar a integração do GitHub para a exportação.
-- [ ] Exportar o projeto para o repositório público `@belesinis/brasil-enderecos-core`.
-- [ ] Confirmar que nenhum segredo ou arquivo de ambiente foi incluído.
-- [ ] Entregar o link público do repositório.
+- [x] Habilitar a integração do GitHub para a exportação.
+- [x] Exportar o projeto para o repositório público `@belesinis/brasil-enderecos-core`.
+- [x] Confirmar que nenhum segredo ou arquivo de ambiente foi incluído.
+- [x] Entregar o link público do repositório.
