@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { trpc } from "@/lib/trpc";
 import { Building2, Database, MapPin, RefreshCw, Search, ShieldCheck } from "lucide-react";
@@ -15,12 +16,20 @@ export default function Home() {
   const [streetId, setStreetId] = useState("");
   const [number, setNumber] = useState("");
   const [postalCode, setPostalCode] = useState("");
+  const [catalogEntity, setCatalogEntity] = useState("cities");
+  const [catalogJson, setCatalogJson] = useState('{"name":"Nova localidade"}');
+  const [catalogId, setCatalogId] = useState("");
   const hierarchy = trpc.locations.brazilHierarchy.useQuery();
   const results = trpc.locations.search.useQuery({ query: searchTerm || undefined, limit: 20, offset: 0 });
   const create = trpc.locations.createAddress.useMutation({
     onSuccess: () => { toast.success("Endereço criado e auditado."); setStreetId(""); setNumber(""); setPostalCode(""); results.refetch(); },
     onError: (error) => toast.error(error.message),
   });
+  const catalogRows = trpc.locations.catalogList.useQuery({ entity: catalogEntity as "subdivisions" | "cities" | "neighborhoods" | "street_types" | "streets" });
+  const catalogCreate = trpc.locations.catalogCreate.useMutation({ onSuccess: () => { toast.success("Registro de referência criado e auditado."); catalogRows.refetch(); }, onError: (error) => toast.error(error.message) });
+  const catalogUpdate = trpc.locations.catalogUpdate.useMutation({ onSuccess: () => { toast.success("Registro atualizado e auditado."); catalogRows.refetch(); }, onError: (error) => toast.error(error.message) });
+  const catalogArchive = trpc.locations.catalogArchive.useMutation({ onSuccess: () => { toast.success("Registro arquivado."); catalogRows.refetch(); }, onError: (error) => toast.error(error.message) });
+  const catalogRestore = trpc.locations.catalogRestore.useMutation({ onSuccess: () => { toast.success("Registro restaurado."); catalogRows.refetch(); }, onError: (error) => toast.error(error.message) });
   const archive = trpc.locations.archiveAddress.useMutation({
     onSuccess: () => {
       toast.success("Endereço arquivado com segurança.");
@@ -83,6 +92,17 @@ export default function Home() {
               <Button disabled={!streetId || !number || create.isPending} onClick={() => create.mutate({ streetId: Number(streetId), number, postalCode: postalCode || undefined })}>{create.isPending ? "Salvando…" : "Cadastrar"}</Button>
             </CardContent>
           </Card>
+
+          <Card className="border-slate-200/80 shadow-sm">
+            <CardHeader><CardTitle className="text-lg">Manutenção do catálogo</CardTitle><p className="mt-1 text-sm text-slate-500">Operação administrativa para entidades de referência. Todas as mutações são auditadas.</p></CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-[220px_1fr_auto]">
+              <select value={catalogEntity} onChange={(event) => setCatalogEntity(event.target.value)} className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm" aria-label="Entidade do catálogo"><option value="subdivisions">UF / estado</option><option value="cities">Cidade</option><option value="neighborhoods">Bairro</option><option value="street_types">Tipo de logradouro</option><option value="streets">Logradouro</option></select>
+              <div className="space-y-2"><Input value={catalogId} onChange={(event) => setCatalogId(event.target.value)} placeholder="ID para atualizar" aria-label="ID do registro" /><Textarea value={catalogJson} onChange={(event) => setCatalogJson(event.target.value)} className="min-h-10" aria-label="Dados JSON do catálogo" /></div>
+              <div className="flex gap-2"><Button disabled={catalogCreate.isPending} onClick={() => { try { catalogCreate.mutate({ entity: catalogEntity as "subdivisions" | "cities" | "neighborhoods" | "street_types" | "streets", data: JSON.parse(catalogJson) }); } catch { toast.error("Informe um JSON válido."); } }}>{catalogCreate.isPending ? "Salvando…" : "Criar"}</Button><Button variant="outline" disabled={!catalogId} onClick={() => { try { catalogUpdate.mutate({ entity: catalogEntity as "subdivisions" | "cities" | "neighborhoods" | "street_types" | "streets", id: Number(catalogId), data: JSON.parse(catalogJson) }); } catch { toast.error("Informe um JSON válido."); } }}>Atualizar</Button></div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200/80 shadow-sm"><CardHeader><CardTitle className="text-lg">Registros de referência</CardTitle><p className="mt-1 text-sm text-slate-500">Lista operacional do nível selecionado.</p></CardHeader><CardContent><div className="max-h-56 overflow-auto divide-y divide-slate-100">{catalogRows.data?.slice(0, 50).map((row: any) => <div key={row.id} className="flex items-center justify-between gap-3 py-3 text-sm"><span><strong>{row.name || row.code}</strong>{row.shortName ? <span className="ml-2 text-slate-400">{row.shortName}</span> : null}</span><div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => catalogArchive.mutate({ entity: catalogEntity as any, id: row.id })}>Arquivar</Button><Button variant="outline" size="sm" onClick={() => catalogRestore.mutate({ entity: catalogEntity as any, id: row.id })}>Restaurar</Button></div></div>)}{!catalogRows.data?.length ? <p className="py-6 text-center text-sm text-slate-500">Nenhum registro encontrado neste nível.</p> : null}</div></CardContent></Card>
 
           <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
             <Card className="border-slate-200/80 shadow-sm">

@@ -32,9 +32,14 @@ describe("locations", () => {
     await expect(caller.locations.archiveAddress({ id: 1 })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("accepts a valid hierarchical search input", async () => {
+  it("accepts a valid hierarchical and proximity search input", async () => {
     const caller = appRouter.createCaller(context());
-    const result = await caller.locations.search({ postalCode: "01311-000", cityId: 3550308, limit: 5, offset: 0 });
+    const result = await caller.locations.search({ postalCode: "01311-000", cityId: 3550308, latitude: -23.5617, longitude: -46.656, radiusKm: 5, limit: 5, offset: 0 });
     expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("protects catalog mutations from regular users", async () => {
+    const caller = appRouter.createCaller(context("user"));
+    await expect(caller.locations.catalogCreate({ entity: "cities", data: { name: "Teste" } })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

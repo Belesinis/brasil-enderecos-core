@@ -5,6 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { createAddress, getAddressById, getBrazilHierarchy, getHierarchyChildren, restoreAddress, searchAddresses, softDeleteAddress, updateAddress } from "./db";
 import { addresses } from "../drizzle/schema";
+import { archiveCatalog, createCatalog, listCatalog, restoreCatalog, updateCatalog, type CatalogEntity } from "./catalogAdmin";
 
 const coordinate = z.number().min(-180).max(180).nullable().optional();
 
@@ -31,6 +32,17 @@ export const appRouter = router({
       offset: z.number().int().min(0).default(0),
     })).query(({ input }) => searchAddresses(input)),
     hierarchyChildren: publicProcedure.input(z.object({ type: z.enum(["cities", "neighborhoods", "streets"]), parentId: z.number().int().positive() })).query(({ input }) => getHierarchyChildren(input.type, input.parentId)),
+    catalogList: adminProcedure.input(z.object({ entity: z.enum(["subdivisions", "cities", "neighborhoods", "street_types", "streets"]), parentId: z.number().int().positive().optional() })).query(({ input }) => listCatalog(input.entity, input.parentId)),
+    catalogCreate: adminProcedure.input(z.discriminatedUnion("entity", [
+      z.object({ entity: z.literal("subdivisions"), data: z.object({ countryId: z.number().int().positive(), code: z.string().min(1).max(12), name: z.string().min(1).max(120), shortName: z.string().max(12).optional(), subdivisionType: z.string().max(40).default("state") }) }),
+      z.object({ entity: z.literal("cities"), data: z.object({ countryId: z.number().int().positive(), subdivisionId: z.number().int().positive(), officialCode: z.string().max(24).optional(), name: z.string().min(1).max(160), normalizedName: z.string().min(1).max(160) }) }),
+      z.object({ entity: z.literal("neighborhoods"), data: z.object({ cityId: z.number().int().positive(), name: z.string().min(1).max(160), normalizedName: z.string().min(1).max(160) }) }),
+      z.object({ entity: z.literal("street_types"), data: z.object({ code: z.string().min(1).max(24), name: z.string().min(1).max(64), abbreviation: z.string().max(16).optional() }) }),
+      z.object({ entity: z.literal("streets"), data: z.object({ cityId: z.number().int().positive(), neighborhoodId: z.number().int().positive().optional(), streetTypeId: z.number().int().positive(), name: z.string().min(1).max(180), normalizedName: z.string().min(1).max(180), postalCode: z.string().max(12).optional() }) }),
+    ])).mutation(({ input, ctx }) => createCatalog(input.entity as CatalogEntity, input.data, ctx.user.id)),
+    catalogUpdate: adminProcedure.input(z.object({ entity: z.enum(["subdivisions", "cities", "neighborhoods", "street_types", "streets"]), id: z.number().int().positive(), data: z.record(z.string(), z.unknown()) })).mutation(({ input, ctx }) => updateCatalog(input.entity as CatalogEntity, input.id, input.data, ctx.user.id)),
+    catalogArchive: adminProcedure.input(z.object({ entity: z.enum(["subdivisions", "cities", "neighborhoods", "street_types", "streets"]), id: z.number().int().positive(), reason: z.string().trim().max(240).optional() })).mutation(({ input, ctx }) => archiveCatalog(input.entity as CatalogEntity, input.id, ctx.user.id, input.reason)),
+    catalogRestore: adminProcedure.input(z.object({ entity: z.enum(["subdivisions", "cities", "neighborhoods", "street_types", "streets"]), id: z.number().int().positive(), reason: z.string().trim().max(240).optional() })).mutation(({ input, ctx }) => restoreCatalog(input.entity as CatalogEntity, input.id, ctx.user.id, input.reason)),
     getById: publicProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input }) => getAddressById(input.id)),
     createAddress: adminProcedure.input(z.object({
       streetId: z.number().int().positive(),
