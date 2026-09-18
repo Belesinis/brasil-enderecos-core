@@ -26,6 +26,7 @@ export default function Home() {
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [isLocating, setIsLocating] = useState(false);
+  const [locationSource, setLocationSource] = useState<"gps" | "manual">("manual");
   const mapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const [catalogEntity, setCatalogEntity] = useState("cities");
@@ -46,7 +47,7 @@ export default function Home() {
       setStreetName(""); setNeighborhoodName(""); setNumber(""); setPostalCode(""); setComplement(""); setReferencePoint(""); setLatitude(""); setLongitude("");
       results.refetch();
     },
-    onError: (error) => toast.error(`Não foi possível cadastrar: ${error.message}`),
+    onError: (error) => toast.error(`Não foi possível cadastrar. Verifique cidade, logradouro e número. Detalhe: ${error.message}`),
   });
   const catalogRows = trpc.locations.catalogList.useQuery({ entity: catalogEntity as "subdivisions" | "cities" | "neighborhoods" | "street_types" | "streets" });
   const catalogCreate = trpc.locations.catalogCreate.useMutation({ onSuccess: () => { toast.success("Registro de referência criado e auditado."); catalogRows.refetch(); }, onError: (error) => toast.error(error.message) });
@@ -70,6 +71,7 @@ export default function Home() {
       const position = { lat: event.latLng.lat(), lng: event.latLng.lng() };
       setLatitude(position.lat.toFixed(6));
       setLongitude(position.lng.toFixed(6));
+      setLocationSource("manual");
       map.panTo(position);
       if (!markerRef.current) {
         markerRef.current = new google.maps.Marker({ map, position, title: "Localização selecionada" });
@@ -94,6 +96,7 @@ export default function Home() {
         const nextPosition = { lat: position.coords.latitude, lng: position.coords.longitude };
         setLatitude(nextPosition.lat.toFixed(6));
         setLongitude(nextPosition.lng.toFixed(6));
+        setLocationSource("gps");
         if (mapRef.current) {
           mapRef.current.panTo(nextPosition);
           mapRef.current.setZoom(17);
@@ -123,10 +126,16 @@ export default function Home() {
       toast.error("Informe UF, cidade, tipo de logradouro, nome da rua e número.");
       return;
     }
+    const parsedLatitude = latitude ? Number(latitude) : undefined;
+    const parsedLongitude = longitude ? Number(longitude) : undefined;
+    if ((parsedLatitude !== undefined && (Number.isNaN(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90)) || (parsedLongitude !== undefined && (Number.isNaN(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180))) {
+      toast.error("Latitude deve estar entre -90 e 90 e longitude entre -180 e 180.");
+      return;
+    }
     create.mutate({
       cityId: Number(cityId), streetTypeId: Number(streetTypeId), streetName, neighborhoodName: neighborhoodName || undefined,
       postalCode: postalCode || undefined, number, complement: complement || undefined, referencePoint: referencePoint || undefined,
-      latitude: latitude ? Number(latitude) : undefined, longitude: longitude ? Number(longitude) : undefined, locationSource: "manual",
+      latitude: parsedLatitude, longitude: parsedLongitude, locationSource,
     });
   };
 
