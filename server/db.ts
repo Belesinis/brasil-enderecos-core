@@ -61,6 +61,34 @@ export async function getUserByOpenId(openId: string) {
   return result[0];
 }
 
+export async function getStreetTypes() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(streetTypes).where(eq(streetTypes.status, "active")).orderBy(asc(streetTypes.name));
+}
+
+export async function getCitiesBySubdivision(subdivisionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(cities).where(and(eq(cities.subdivisionId, subdivisionId), isNull(cities.deletedAt))).orderBy(asc(cities.name));
+}
+
+export async function searchStreets(input: { cityId: number; query?: string; limit: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const filters = [eq(streets.cityId, input.cityId), isNull(streets.deletedAt)];
+  if (input.query?.trim()) {
+    const term = `%${input.query.trim()}%`;
+    filters.push(or(like(streets.name, term), like(streets.normalizedName, term))!);
+  }
+  return db.select({ id: streets.id, name: streets.name, postalCode: streets.postalCode, streetTypeId: streets.streetTypeId, neighborhoodId: streets.neighborhoodId })
+    .from(streets).where(and(...filters)).orderBy(asc(streets.name)).limit(input.limit);
+}
+
+export function normalizeAddressName(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+}
+
 export async function getBrazilHierarchy() {
   const db = await getDb();
   if (!db) return { country: null, subdivisions: [], cities: [] };
@@ -135,6 +163,32 @@ export async function getAddressById(id: number) {
   if (!db) return undefined;
   const result = await db.select().from(addresses).where(eq(addresses.id, id)).limit(1);
   return result[0];
+}
+
+export async function createAddressFromDetails(input: { cityId: number; streetTypeId: number; streetName: string; neighborhoodName?: string; postalCode?: string; number: string; complement?: string; referencePoint?: string; latitude?: string; longitude?: string; locationSource?: "gps" | "manual" | "geocoded" | "imported"; createdBy?: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const normalize = normalizeAddressName;
+  let neighborhoodId: number | undefined;
+  if (input.neighborhoodName?.trim()) {
+    const normalizedName = normalize(input.neighborhoodName);
+    const existingNeighborhood = (await db.select().from(neighborhoods).where(and(eq(neighborhoods.cityId, input.cityId), eq(neighborhoods.normalizedName, normalizedName), isNull(neighborhoods.deletedAt))).limit(1))[0];
+    if (existingNeighborhood) neighborhoodId = existingNeighborhood.id;
+    else {
+      const neighborhoodResult = await db.insert(neighborhoods).values({ cityId: input.cityId, name: input.neighborhoodName.trim(), normalizedName });
+      neighborhoodId = Number(neighborhoodResult[0].insertId);
+      await recordAudit({ entityType: "neighborhoods", entityId: neighborhoodId, action: "create", actorUserId: input.createdBy, afterData: { cityId: input.cityId, name: input.neighborhoodName.trim() } });
+    }
+  }
+  const normalizedStreetName = normalize(input.streetName);
+  const existingStreet = (await db.select().from(streets).where(and(eq(streets.cityId, input.cityId), eq(streets.streetTypeId, input.streetTypeId), eq(streets.normalizedName, normalizedStreetName), neighborhoodId ? eq(streets.neighborhoodId, neighborhoodId) : isNull(streets.neighborhoodId), isNull(streets.deletedAt))).limit(1))[0];
+  let streetId = existingStreet?.id;
+  if (!streetId) {
+    const streetResult = await db.insert(streets).values({ cityId: input.cityId, neighborhoodId, streetTypeId: input.streetTypeId, name: input.streetName.trim(), normalizedName: normalizedStreetName, postalCode: input.postalCode });
+    streetId = Number(streetResult[0].insertId);
+    await recordAudit({ entityType: "streets", entityId: streetId, action: "create", actorUserId: input.createdBy, afterData: { cityId: input.cityId, name: input.streetName.trim() } });
+  }
+  return createAddress({ streetId, postalCode: input.postalCode, number: input.number.trim(), complement: input.complement?.trim(), referencePoint: input.referencePoint?.trim(), latitude: input.latitude, longitude: input.longitude, locationSource: input.locationSource ?? "manual", createdBy: input.createdBy });
 }
 
 export async function createAddress(input: typeof addresses.$inferInsert) {

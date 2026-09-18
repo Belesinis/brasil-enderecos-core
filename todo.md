@@ -40,3 +40,24 @@
 - [x] Exportar o projeto para o repositório público `@belesinis/brasil-enderecos-core`.
 - [x] Confirmar que nenhum segredo ou arquivo de ambiente foi incluído.
 - [x] Entregar o link público do repositório.
+
+## Correção — cadastro de endereço
+
+- [x] Substituir o campo técnico de ID do logradouro por cadastro guiado por CEP, cidade, bairro, logradouro e número.
+- [x] Criar consultas públicas de tipos, cidades e logradouros para seleção e validação das relações.
+- [x] Melhorar mensagens de erro, autenticação e estado de salvamento do cadastro.
+- [x] Adicionar testes para o novo fluxo de cadastro.
+- [x] Validar compilação, testes e publicar a correção.
+
+## Teste — cadastro completo do usuário ID 01
+
+- [x] Deixar o formulário pronto para receber os dados do endereço de teste antes da gravação.
+- [x] Associar cada cadastro ao usuário autenticado e preservar auditoria; a sessão do usuário ID 01 será usada quando ativa.
+- [x] Disponibilizar a validação do registro no painel e na API.
+
+## Ajuste confirmado — formulário manual completo
+
+- [x] Substituir o cadastro técnico por formulário manual de CEP, UF, cidade, bairro, logradouro, número, complemento, referência e coordenadas.
+- [x] Resolver automaticamente cidade e logradouro a partir dos campos preenchidos, sem expor IDs ao usuário.
+- [x] Associar o endereço ao usuário autenticado, usando o usuário ID 01 quando essa sessão estiver ativa.
+- [x] Validar e publicar a tela manual de cadastro.

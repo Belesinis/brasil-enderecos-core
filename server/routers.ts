@@ -3,7 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { createAddress, getAddressById, getBrazilHierarchy, getHierarchyChildren, restoreAddress, searchAddresses, softDeleteAddress, updateAddress } from "./db";
+import { createAddress, createAddressFromDetails, getAddressById, getBrazilHierarchy, getCitiesBySubdivision, getHierarchyChildren, getStreetTypes, restoreAddress, searchAddresses, searchStreets, softDeleteAddress, updateAddress } from "./db";
 import { addresses } from "../drizzle/schema";
 import { archiveCatalog, createCatalog, listCatalog, restoreCatalog, updateCatalog, type CatalogEntity } from "./catalogAdmin";
 
@@ -21,6 +21,9 @@ export const appRouter = router({
   }),
   locations: router({
     brazilHierarchy: publicProcedure.query(() => getBrazilHierarchy()),
+    citiesBySubdivision: publicProcedure.input(z.object({ subdivisionId: z.number().int().positive() })).query(({ input }) => getCitiesBySubdivision(input.subdivisionId)),
+    streetTypes: publicProcedure.query(() => getStreetTypes()),
+    streetsSearch: publicProcedure.input(z.object({ cityId: z.number().int().positive(), query: z.string().trim().max(180).optional(), limit: z.number().int().min(1).max(20).default(10) })).query(({ input }) => searchStreets(input)),
     search: publicProcedure.input(z.object({
       query: z.string().trim().max(180).optional(),
       postalCode: z.string().trim().max(12).optional(),
@@ -54,6 +57,19 @@ export const appRouter = router({
       longitude: coordinate,
       locationSource: z.enum(["gps", "manual", "geocoded", "imported"]).optional(),
     })).mutation(({ input, ctx }) => createAddress({ ...input, createdBy: ctx.user.id } as typeof addresses.$inferInsert)),
+    createAddressFromDetails: adminProcedure.input(z.object({
+      cityId: z.number().int().positive(),
+      streetTypeId: z.number().int().positive(),
+      streetName: z.string().trim().min(1).max(180),
+      neighborhoodName: z.string().trim().max(160).optional(),
+      postalCode: z.string().trim().max(12).optional(),
+      number: z.string().trim().min(1).max(24),
+      complement: z.string().trim().max(160).optional(),
+      referencePoint: z.string().trim().max(240).optional(),
+      latitude: coordinate,
+      longitude: coordinate,
+      locationSource: z.enum(["gps", "manual", "geocoded", "imported"]).optional(),
+    })).mutation(({ input, ctx }) => createAddressFromDetails({ ...input, latitude: input.latitude == null ? undefined : String(input.latitude), longitude: input.longitude == null ? undefined : String(input.longitude), createdBy: ctx.user.id })),
     updateAddress: adminProcedure.input(z.object({
       id: z.number().int().positive(),
       postalCode: z.string().trim().max(12).optional(),
