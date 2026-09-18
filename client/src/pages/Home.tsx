@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { MapView } from "@/components/Map";
 import { trpc } from "@/lib/trpc";
 import { Building2, Database, MapPin, RefreshCw, Search, ShieldCheck } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export default function Home() {
@@ -24,6 +25,8 @@ export default function Home() {
   const [referencePoint, setReferencePoint] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markerRef = useRef<google.maps.Marker | null>(null);
   const [catalogEntity, setCatalogEntity] = useState("cities");
   const [catalogJson, setCatalogJson] = useState('{"name":"Nova localidade"}');
   const [catalogId, setCatalogId] = useState("");
@@ -51,6 +54,33 @@ export default function Home() {
   const catalogRestore = trpc.locations.catalogRestore.useMutation({ onSuccess: () => { toast.success("Registro restaurado."); catalogRows.refetch(); }, onError: (error) => toast.error(error.message) });
   const archive = trpc.locations.archiveAddress.useMutation({ onSuccess: () => { toast.success("Endereço arquivado com segurança."); results.refetch(); }, onError: (error) => toast.error(error.message) });
   const country = hierarchy.data?.country;
+  const selectedPosition = latitude && longitude ? { lat: Number(latitude), lng: Number(longitude) } : null;
+
+  useEffect(() => {
+    if (!mapRef.current || !selectedPosition || Number.isNaN(selectedPosition.lat) || Number.isNaN(selectedPosition.lng)) return;
+    mapRef.current.panTo(selectedPosition);
+    markerRef.current?.setPosition(selectedPosition);
+  }, [latitude, longitude]);
+
+  const handleMapReady = (map: google.maps.Map) => {
+    mapRef.current = map;
+    map.addListener("click", (event: google.maps.MapMouseEvent) => {
+      if (!event.latLng) return;
+      const position = { lat: event.latLng.lat(), lng: event.latLng.lng() };
+      setLatitude(position.lat.toFixed(6));
+      setLongitude(position.lng.toFixed(6));
+      map.panTo(position);
+      if (!markerRef.current) {
+        markerRef.current = new google.maps.Marker({ map, position, title: "Localização selecionada" });
+      } else {
+        markerRef.current.setMap(map);
+        markerRef.current.setPosition(position);
+      }
+    });
+    if (selectedPosition) {
+      markerRef.current = new google.maps.Marker({ map, position: selectedPosition, title: "Localização selecionada" });
+    }
+  };
 
   const submitManualAddress = () => {
     if (!cityId || !streetTypeId || !streetName.trim() || !number.trim()) {
@@ -82,6 +112,10 @@ export default function Home() {
           <Input value={referencePoint} onChange={(e) => setReferencePoint(e.target.value)} placeholder="Ponto de referência (opcional)" aria-label="Ponto de referência" />
           <Input value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="Latitude (opcional)" aria-label="Latitude" type="number" step="any" />
           <Input value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="Longitude (opcional)" aria-label="Longitude" type="number" step="any" />
+          <div className="md:col-span-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3"><div><p className="text-sm font-medium text-slate-800">Escolha a localização no mapa</p><p className="text-xs text-slate-500">Clique no ponto desejado para preencher latitude e longitude automaticamente.</p></div><MapPin className="h-5 w-5 text-indigo-600" /></div>
+            <MapView className="h-[320px]" initialCenter={{ lat: -14.235, lng: -51.9253 }} initialZoom={4} onMapReady={handleMapReady} />
+          </div>
           <div className="md:col-span-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-slate-500">{stateId && cityId ? `Relação validada: ${states.find((state) => state.id === Number(stateId))?.shortName || "UF"} › ${selectedCities.find((city) => city.id === Number(cityId))?.name || "cidade"}` : "Selecione a UF e a cidade para validar a relação territorial."}</p><Button className="h-10 bg-indigo-600 hover:bg-indigo-500" disabled={create.isPending} onClick={submitManualAddress}>{create.isPending ? "Salvando…" : "Cadastrar endereço"}</Button></div>
         </CardContent></Card>
         <Card className="border-slate-200/80 shadow-sm"><CardHeader><CardTitle className="text-lg">Manutenção do catálogo</CardTitle><p className="mt-1 text-sm text-slate-500">Operação administrativa para entidades de referência. Todas as mutações são auditadas.</p></CardHeader><CardContent className="grid gap-3 md:grid-cols-[220px_1fr_auto]"><select value={catalogEntity} onChange={(event) => setCatalogEntity(event.target.value)} className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm" aria-label="Entidade do catálogo"><option value="subdivisions">UF / estado</option><option value="cities">Cidade</option><option value="neighborhoods">Bairro</option><option value="street_types">Tipo de logradouro</option><option value="streets">Logradouro</option></select><div className="space-y-2"><Input value={catalogId} onChange={(event) => setCatalogId(event.target.value)} placeholder="ID para atualizar" aria-label="ID do registro" /><Textarea value={catalogJson} onChange={(event) => setCatalogJson(event.target.value)} className="min-h-10" aria-label="Dados JSON do catálogo" /></div><div className="flex gap-2"><Button disabled={catalogCreate.isPending} onClick={() => { try { catalogCreate.mutate({ entity: catalogEntity as any, data: JSON.parse(catalogJson) }); } catch { toast.error("Informe um JSON válido."); } }}>{catalogCreate.isPending ? "Salvando…" : "Criar"}</Button><Button variant="outline" disabled={!catalogId} onClick={() => { try { catalogUpdate.mutate({ entity: catalogEntity as any, id: Number(catalogId), data: JSON.parse(catalogJson) }); } catch { toast.error("Informe um JSON válido."); } }}>Atualizar</Button></div></CardContent></Card>
