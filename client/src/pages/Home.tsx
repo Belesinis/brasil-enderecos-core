@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { MapView } from "@/components/Map";
 import { trpc } from "@/lib/trpc";
-import { Building2, Database, MapPin, RefreshCw, Search, ShieldCheck } from "lucide-react";
+import { Building2, Crosshair, Database, MapPin, RefreshCw, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -25,6 +25,7 @@ export default function Home() {
   const [referencePoint, setReferencePoint] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [isLocating, setIsLocating] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const [catalogEntity, setCatalogEntity] = useState("cities");
@@ -82,6 +83,41 @@ export default function Home() {
     }
   };
 
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Seu navegador não oferece captura de localização.");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nextPosition = { lat: position.coords.latitude, lng: position.coords.longitude };
+        setLatitude(nextPosition.lat.toFixed(6));
+        setLongitude(nextPosition.lng.toFixed(6));
+        if (mapRef.current) {
+          mapRef.current.panTo(nextPosition);
+          mapRef.current.setZoom(17);
+          if (!markerRef.current) {
+            markerRef.current = new google.maps.Marker({ map: mapRef.current, position: nextPosition, title: "Minha localização" });
+          } else {
+            markerRef.current.setMap(mapRef.current);
+            markerRef.current.setPosition(nextPosition);
+          }
+        }
+        setIsLocating(false);
+        toast.success("Localização capturada. Confira o ponto no mapa antes de cadastrar.");
+      },
+      (error) => {
+        setIsLocating(false);
+        const message = error.code === error.PERMISSION_DENIED
+          ? "Permita o acesso à localização no navegador para usar este recurso."
+          : "Não foi possível obter sua localização. Confira se o GPS ou a localização do dispositivo está ativo.";
+        toast.error(message);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+    );
+  };
+
   const submitManualAddress = () => {
     if (!cityId || !streetTypeId || !streetName.trim() || !number.trim()) {
       toast.error("Informe UF, cidade, tipo de logradouro, nome da rua e número.");
@@ -113,7 +149,7 @@ export default function Home() {
           <Input value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="Latitude (opcional)" aria-label="Latitude" type="number" step="any" />
           <Input value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="Longitude (opcional)" aria-label="Longitude" type="number" step="any" />
           <div className="md:col-span-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3"><div><p className="text-sm font-medium text-slate-800">Escolha a localização no mapa</p><p className="text-xs text-slate-500">Clique no ponto desejado para preencher latitude e longitude automaticamente.</p></div><MapPin className="h-5 w-5 text-indigo-600" /></div>
+            <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-medium text-slate-800">Escolha a localização no mapa</p><p className="text-xs text-slate-500">Clique no ponto desejado ou use sua localização atual para preencher as coordenadas.</p></div><Button type="button" variant="outline" className="w-full bg-white sm:w-auto" onClick={useCurrentLocation} disabled={isLocating}><Crosshair className="mr-2 h-4 w-4 text-indigo-600" />{isLocating ? "Capturando…" : "Usar minha localização"}</Button></div>
             <MapView className="h-[320px]" initialCenter={{ lat: -14.235, lng: -51.9253 }} initialZoom={4} onMapReady={handleMapReady} />
           </div>
           <div className="md:col-span-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-slate-500">{stateId && cityId ? `Relação validada: ${states.find((state) => state.id === Number(stateId))?.shortName || "UF"} › ${selectedCities.find((city) => city.id === Number(cityId))?.name || "cidade"}` : "Selecione a UF e a cidade para validar a relação territorial."}</p><Button className="h-10 bg-indigo-600 hover:bg-indigo-500" disabled={create.isPending} onClick={submitManualAddress}>{create.isPending ? "Salvando…" : "Cadastrar endereço"}</Button></div>
