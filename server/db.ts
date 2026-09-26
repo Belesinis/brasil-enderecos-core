@@ -78,7 +78,7 @@ export async function searchStreets(input: { cityId: number; query?: string; lim
   if (!db) return [];
   const filters = [eq(streets.cityId, input.cityId), isNull(streets.deletedAt)];
   if (input.query?.trim()) {
-    const term = `%${input.query.trim()}%`;
+    const term = `${input.query.trim()}%`;
     filters.push(or(like(streets.name, term), like(streets.normalizedName, term))!);
   }
   return db.select({ id: streets.id, name: streets.name, postalCode: streets.postalCode, streetTypeId: streets.streetTypeId, neighborhoodId: streets.neighborhoodId })
@@ -90,7 +90,7 @@ export async function searchNeighborhoods(input: { cityId: number; query?: strin
   if (!db) return [];
   const filters = [eq(neighborhoods.cityId, input.cityId), isNull(neighborhoods.deletedAt)];
   if (input.query?.trim()) {
-    const term = `%${input.query.trim()}%`;
+    const term = `${input.query.trim()}%`;
     filters.push(or(like(neighborhoods.name, term), like(neighborhoods.normalizedName, term))!);
   }
   return db.select({ id: neighborhoods.id, name: neighborhoods.name })
