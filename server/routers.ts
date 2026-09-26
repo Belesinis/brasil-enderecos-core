@@ -3,7 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { createAddress, createAddressFromDetails, getAddressById, getBrazilHierarchy, getCitiesBySubdivision, getHierarchyChildren, getStreetTypes, restoreAddress, searchAddresses, searchStreets, softDeleteAddress, updateAddress } from "./db";
+import { createAddress, createAddressFromDetails, getAddressById, getBrazilHierarchy, getCitiesBySubdivision, getHierarchyChildren, getStreetTypes, restoreAddress, searchAddresses, searchNeighborhoods, searchStreets, softDeleteAddress, updateAddress } from "./db";
 import { addresses } from "../drizzle/schema";
 import { archiveCatalog, createCatalog, listCatalog, restoreCatalog, updateCatalog, type CatalogEntity } from "./catalogAdmin";
 
@@ -23,6 +23,7 @@ export const appRouter = router({
     brazilHierarchy: publicProcedure.query(() => getBrazilHierarchy()),
     citiesBySubdivision: publicProcedure.input(z.object({ subdivisionId: z.number().int().positive() })).query(({ input }) => getCitiesBySubdivision(input.subdivisionId)),
     streetTypes: publicProcedure.query(() => getStreetTypes()),
+    neighborhoodsSearch: publicProcedure.input(z.object({ cityId: z.number().int().positive(), query: z.string().trim().max(160).optional(), limit: z.number().int().min(1).max(20).default(10) })).query(({ input }) => searchNeighborhoods(input)),
     streetsSearch: publicProcedure.input(z.object({ cityId: z.number().int().positive(), query: z.string().trim().max(180).optional(), limit: z.number().int().min(1).max(20).default(10) })).query(({ input }) => searchStreets(input)),
     search: publicProcedure.input(z.object({
       query: z.string().trim().max(180).optional(),

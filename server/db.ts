@@ -85,6 +85,18 @@ export async function searchStreets(input: { cityId: number; query?: string; lim
     .from(streets).where(and(...filters)).orderBy(asc(streets.name)).limit(input.limit);
 }
 
+export async function searchNeighborhoods(input: { cityId: number; query?: string; limit: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const filters = [eq(neighborhoods.cityId, input.cityId), isNull(neighborhoods.deletedAt)];
+  if (input.query?.trim()) {
+    const term = `%${input.query.trim()}%`;
+    filters.push(or(like(neighborhoods.name, term), like(neighborhoods.normalizedName, term))!);
+  }
+  return db.select({ id: neighborhoods.id, name: neighborhoods.name })
+    .from(neighborhoods).where(and(...filters)).orderBy(asc(neighborhoods.name)).limit(input.limit);
+}
+
 export function normalizeAddressName(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
 }
