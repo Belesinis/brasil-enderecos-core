@@ -57,6 +57,7 @@ export const appRouter = router({
       latitude: coordinate,
       longitude: coordinate,
       locationSource: z.enum(["gps", "manual", "geocoded", "imported"]).optional(),
+      areaType: z.enum(["urban", "rural"]).default("urban"),
     })).mutation(({ input, ctx }) => createAddress({ ...input, createdBy: ctx.user.id } as typeof addresses.$inferInsert)),
     createAddressFromDetails: adminProcedure.input(z.object({
       cityId: z.number().int().positive(),
@@ -70,6 +71,7 @@ export const appRouter = router({
       latitude: coordinate,
       longitude: coordinate,
       locationSource: z.enum(["gps", "manual", "geocoded", "imported"]).optional(),
+      areaType: z.enum(["urban", "rural"]).default("urban"),
     })).mutation(({ input, ctx }) => createAddressFromDetails({ ...input, latitude: input.latitude == null ? undefined : String(input.latitude), longitude: input.longitude == null ? undefined : String(input.longitude), createdBy: ctx.user.id })),
     updateAddress: adminProcedure.input(z.object({
       id: z.number().int().positive(),
@@ -80,6 +82,7 @@ export const appRouter = router({
       latitude: coordinate,
       longitude: coordinate,
       locationSource: z.enum(["gps", "manual", "geocoded", "imported"]).nullable().optional(),
+      areaType: z.enum(["urban", "rural"]).optional(),
     })).mutation(({ input, ctx }) => {
       const { id, latitude, longitude, ...changes } = input;
       return updateAddress(id, {

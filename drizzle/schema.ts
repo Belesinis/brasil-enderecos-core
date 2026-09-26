@@ -133,6 +133,7 @@ export const addresses = mysqlTable("addresses", {
   latitude: decimal("latitude", { precision: 9, scale: 6 }),
   longitude: decimal("longitude", { precision: 9, scale: 6 }),
   locationSource: mysqlEnum("locationSource", ["gps", "manual", "geocoded", "imported"]),
+  areaType: mysqlEnum("areaType", ["urban", "rural"]).default("urban").notNull(),
   status: mysqlEnum("status", recordStatuses).default("active").notNull(),
   createdBy: int("createdBy").references(() => users.id),
   updatedBy: int("updatedBy").references(() => users.id),

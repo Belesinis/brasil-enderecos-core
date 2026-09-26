@@ -22,6 +22,7 @@ export default function Home() {
   const [streetName, setStreetName] = useState("");
   const [neighborhoodName, setNeighborhoodName] = useState("");
   const [number, setNumber] = useState("");
+  const [areaType, setAreaType] = useState<"urban" | "rural">("urban");
   const [postalCode, setPostalCode] = useState("");
   const [complement, setComplement] = useState("");
   const [referencePoint, setReferencePoint] = useState("");
@@ -41,7 +42,7 @@ export default function Home() {
   const streets = trpc.locations.streetsSearch.useQuery({ cityId: Number(cityId) || 1, query: streetName.trim() || undefined, limit: 8 }, { enabled: Boolean(cityId) && streetName.trim().length >= 2 });
   const results = trpc.locations.search.useQuery({ query: searchTerm || undefined, limit: 20, offset: 0 });
   const cities = hierarchy.data?.cities ?? [];
-  const states = hierarchy.data?.subdivisions ?? [];
+  const states = useMemo(() => [...(hierarchy.data?.subdivisions ?? [])].sort((a, b) => a.name.localeCompare(b.name, "pt-BR")), [hierarchy.data?.subdivisions]);
   const hierarchyCities = useMemo(() => stateId ? cities.filter((city) => city.subdivisionId === Number(stateId)) : [], [cities, stateId]);
   const selectedCities = citiesByState.data ?? hierarchyCities;
   const normalizeSearch = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -145,7 +146,7 @@ export default function Home() {
       return;
     }
     create.mutate({
-      cityId: Number(cityId), streetTypeId: Number(streetTypeId), streetName, neighborhoodName: neighborhoodName || undefined,
+      cityId: Number(cityId), streetTypeId: Number(streetTypeId), streetName, neighborhoodName: neighborhoodName || undefined, areaType,
       postalCode: postalCode || undefined, number, complement: complement || undefined, referencePoint: referencePoint || undefined,
       latitude: parsedLatitude, longitude: parsedLongitude, locationSource,
     });
@@ -161,6 +162,7 @@ export default function Home() {
           <div className="relative"><Input value={stateName} onChange={(e) => { const value = e.target.value; const normalized = normalizeSearch(value); const state = states.find((item) => normalizeSearch(item.name) === normalized || normalizeSearch(item.shortName || item.code) === normalized); setStateName(value); setStateId(state ? String(state.id) : ""); setCityName(""); setCityId(""); }} placeholder="Digite a UF ou estado" aria-label="UF ou estado" />{stateName && stateSuggestions.length ? <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-slate-200 bg-white p-1 shadow-lg">{stateSuggestions.map((state) => <button type="button" key={state.id} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-indigo-50" onClick={() => { setStateName(`${state.shortName || state.code} — ${state.name}`); setStateId(String(state.id)); setCityName(""); setCityId(""); }}>{state.shortName || state.code} — {state.name}</button>)}</div> : null}</div>
           <div className="relative"><Input value={cityName} onChange={(e) => { const value = e.target.value; const city = selectedCities.find((item) => normalizeSearch(item.name) === normalizeSearch(value)); setCityName(value); setCityId(city ? String(city.id) : ""); }} disabled={!stateId} placeholder="Digite a cidade" aria-label="Cidade" />{stateId && cityName && citySuggestions.length ? <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-slate-200 bg-white p-1 shadow-lg">{citySuggestions.map((city) => <button type="button" key={city.id} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-indigo-50" onClick={() => { setCityName(city.name); setCityId(String(city.id)); }}>{city.name}</button>)}</div> : null}</div>
           <select value={streetTypeId} onChange={(e) => setStreetTypeId(e.target.value)} className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm" aria-label="Tipo de logradouro"><option value="">Tipo de logradouro</option>{streetTypes.data?.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}</select>
+          <select value={areaType} onChange={(e) => setAreaType(e.target.value as "urban" | "rural")} className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm" aria-label="Tipo de área"><option value="urban">Área urbana</option><option value="rural">Área rural</option></select>
           <div className="relative"><Input value={streetName} onChange={(e) => setStreetName(e.target.value)} placeholder="Nome do logradouro" aria-label="Nome do logradouro" />{streets.data?.length ? <div className="absolute z-10 mt-1 max-h-44 w-full overflow-auto rounded-md border border-slate-200 bg-white p-1 shadow-lg">{streets.data.map((street) => <button type="button" key={street.id} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-indigo-50" onClick={() => { setStreetName(street.name); if (street.postalCode && !postalCode) setPostalCode(street.postalCode); }}>{street.name}{street.postalCode ? <span className="ml-2 text-slate-400">{street.postalCode}</span> : null}</button>)}</div> : null}</div>
           <div className="relative"><Input value={neighborhoodName} onChange={(e) => setNeighborhoodName(e.target.value)} placeholder="Digite o bairro" aria-label="Bairro" />{neighborhoods.data?.length ? <div className="absolute z-10 mt-1 max-h-44 w-full overflow-auto rounded-md border border-slate-200 bg-white p-1 shadow-lg">{neighborhoods.data.map((neighborhood) => <button type="button" key={neighborhood.id} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-indigo-50" onClick={() => setNeighborhoodName(neighborhood.name)}>{neighborhood.name}</button>)}</div> : null}</div>
           <Input value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Número" aria-label="Número" />
