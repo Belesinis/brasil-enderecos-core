@@ -52,7 +52,7 @@ export default function Home() {
   }, [cityName, selectedCities]);
   const stateSuggestions = useMemo(() => {
     const term = normalizeSearch(stateName);
-    return states.filter((state) => !term || normalizeSearch(`${state.shortName || state.code} ${state.name}`).includes(term)).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+    return states.filter((state) => !term || normalizeSearch(state.name).startsWith(term) || normalizeSearch(state.shortName || state.code).startsWith(term)).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   }, [stateName, states]);
   const create = trpc.locations.createAddressFromDetails.useMutation({
     onSuccess: () => {
