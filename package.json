@@ -12,7 +12,9 @@
     "test": "vitest run",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "seed:brazil": "node scripts/seed-brazil.mjs",
-    "seed:neighborhoods:marataizes": "node scripts/seed-neighborhoods-marataizes.mjs"
+    "seed:neighborhoods:marataizes": "node scripts/seed-neighborhoods-marataizes.mjs",
+    "import:streets:marataizes:osm": "node scripts/import-streets-marataizes-osm.mjs",
+    "import:streets:marataizes:cep": "node scripts/import-streets-marataizes-cep.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",

@@ -1,0 +1,1 @@
+ALTER TABLE `neighborhoods` ADD `areaType` enum('urban','rural') DEFAULT 'urban' NOT NULL;

@@ -93,7 +93,7 @@ export async function searchNeighborhoods(input: { cityId: number; query?: strin
     const term = `${input.query.trim()}%`;
     filters.push(or(like(neighborhoods.name, term), like(neighborhoods.normalizedName, term))!);
   }
-  return db.select({ id: neighborhoods.id, name: neighborhoods.name })
+  return db.select({ id: neighborhoods.id, name: neighborhoods.name, areaType: neighborhoods.areaType })
     .from(neighborhoods).where(and(...filters)).orderBy(asc(neighborhoods.name)).limit(input.limit);
 }
 

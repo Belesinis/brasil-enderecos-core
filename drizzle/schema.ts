@@ -86,6 +86,7 @@ export const neighborhoods = mysqlTable("neighborhoods", {
   cityId: int("cityId").notNull().references(() => cities.id),
   name: varchar("name", { length: 160 }).notNull(),
   normalizedName: varchar("normalizedName", { length: 160 }).notNull(),
+  areaType: mysqlEnum("areaType", ["urban", "rural"]).default("urban").notNull(),
   status: mysqlEnum("status", recordStatuses).default("active").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
