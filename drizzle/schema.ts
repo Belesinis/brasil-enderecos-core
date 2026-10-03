@@ -129,6 +129,8 @@ export const addresses = mysqlTable("addresses", {
   streetId: int("streetId").notNull().references(() => streets.id),
   postalCode: varchar("postalCode", { length: 12 }),
   number: varchar("number", { length: 24 }).notNull(),
+  propertyType: mysqlEnum("propertyType", ["house", "store", "apartment", "other"]).default("house").notNull(),
+  apartmentNumber: varchar("apartmentNumber", { length: 24 }),
   complement: varchar("complement", { length: 160 }),
   referencePoint: varchar("referencePoint", { length: 240 }),
   latitude: decimal("latitude", { precision: 9, scale: 6 }),

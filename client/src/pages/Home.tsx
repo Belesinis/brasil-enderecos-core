@@ -25,6 +25,8 @@ export default function Home() {
   const [neighborhoodName, setNeighborhoodName] = useState("");
   const [isNeighborhoodFocused, setIsNeighborhoodFocused] = useState(false);
   const [number, setNumber] = useState("");
+  const [propertyType, setPropertyType] = useState<"house" | "store" | "apartment" | "other">("house");
+  const [apartmentNumber, setApartmentNumber] = useState("");
   const [areaType, setAreaType] = useState<"urban" | "rural">("urban");
   const [postalCode, setPostalCode] = useState("");
   const [complement, setComplement] = useState("");
@@ -62,7 +64,7 @@ export default function Home() {
   const create = trpc.locations.createAddressFromDetails.useMutation({
     onSuccess: () => {
       toast.success("Endereço criado e auditado para o usuário autenticado.");
-      setStreetName(""); setNeighborhoodName(""); setNumber(""); setPostalCode(""); setComplement(""); setReferencePoint(""); setLatitude(""); setLongitude("");
+      setStreetName(""); setNeighborhoodName(""); setNumber(""); setPropertyType("house"); setApartmentNumber(""); setPostalCode(""); setComplement(""); setReferencePoint(""); setLatitude(""); setLongitude("");
       results.refetch();
     },
     onError: (error) => toast.error(`Não foi possível cadastrar. Verifique cidade, logradouro e número. Detalhe: ${error.message}`),
@@ -141,8 +143,8 @@ export default function Home() {
 
   const submitManualAddress = () => {
     setHasTriedSubmit(true);
-    if (!cityId || !streetTypeId || !streetName.trim() || !number.trim()) {
-      toast.error("Informe UF, cidade, tipo de logradouro, nome da rua e número.");
+    if (!cityId || !streetTypeId || !streetName.trim() || !number.trim() || (propertyType === "apartment" && !apartmentNumber.trim())) {
+      toast.error(propertyType === "apartment" && !apartmentNumber.trim() ? "Informe o número do apartamento." : "Informe UF, cidade, tipo de logradouro, nome da rua e número.");
       return;
     }
     const parsedLatitude = latitude ? Number(latitude) : undefined;
@@ -152,7 +154,7 @@ export default function Home() {
       return;
     }
     create.mutate({
-      cityId: Number(cityId), streetTypeId: Number(streetTypeId), streetName, neighborhoodName: neighborhoodName || undefined, areaType,
+      cityId: Number(cityId), streetTypeId: Number(streetTypeId), streetName, neighborhoodName: neighborhoodName || undefined, propertyType, apartmentNumber: propertyType === "apartment" ? apartmentNumber || undefined : undefined, areaType,
       postalCode: postalCode || undefined, number, complement: complement || undefined, referencePoint: referencePoint || undefined,
       latitude: parsedLatitude, longitude: parsedLongitude, locationSource,
     });
@@ -160,7 +162,7 @@ export default function Home() {
 
   const clearManualAddress = () => {
     setStateId(""); setStateName(""); setCityId(""); setCityName(""); setStreetTypeId(""); setStreetName("");
-    setNeighborhoodName(""); setNumber(""); setAreaType("urban"); setPostalCode(""); setComplement("");
+    setNeighborhoodName(""); setNumber(""); setPropertyType("house"); setApartmentNumber(""); setAreaType("urban"); setPostalCode(""); setComplement("");
     setReferencePoint(""); setLatitude(""); setLongitude(""); setLocationSource("manual"); setHasTriedSubmit(false);
     markerRef.current?.setMap(null); markerRef.current = null;
     toast.success("Formulário limpo.");
@@ -179,6 +181,7 @@ export default function Home() {
             <div className="relative min-w-0 flex-1"><Input required value={streetName} className={hasTriedSubmit && !streetName.trim() ? "border-rose-400 ring-1 ring-rose-200" : ""} onChange={(e) => setStreetName(e.target.value)} placeholder="Nome do logradouro" aria-label="Nome do logradouro" />{streets.data?.length ? <div className="absolute z-20 mt-1 max-h-44 w-full overflow-auto rounded-md border border-slate-200 bg-white p-1 shadow-lg">{streets.data.map((street) => <button type="button" key={street.id} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-indigo-50" onClick={() => { setStreetName(street.name); if (street.postalCode && !postalCode) setPostalCode(street.postalCode); }}>{street.name}{street.postalCode ? <span className="ml-2 text-slate-400">{street.postalCode}</span> : null}</button>)}</div> : null}</div>
           </div>
           <Input required value={number} className={hasTriedSubmit && !number.trim() ? "border-rose-400 ring-1 ring-rose-200" : ""} onChange={(e) => setNumber(e.target.value)} placeholder="Número ou s/n" aria-label="Número ou sem número" />
+          <div className="flex min-w-0 gap-2"><select value={propertyType} onChange={(e) => { const value = e.target.value as typeof propertyType; setPropertyType(value); if (value !== "apartment") setApartmentNumber(""); }} className="h-10 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 text-sm" aria-label="Tipo de imóvel"><option value="house">Casa</option><option value="store">Loja</option><option value="apartment">Apartamento</option><option value="other">Outro</option></select>{propertyType === "apartment" ? <Input value={apartmentNumber} onChange={(e) => setApartmentNumber(e.target.value)} placeholder="Nº apto" aria-label="Número do apartamento" className={`min-w-0 flex-1 ${hasTriedSubmit && !apartmentNumber.trim() ? "border-rose-400 ring-1 ring-rose-200" : ""}`} /> : null}</div>
           <Input value={postalCode} onChange={(e) => { const digits = e.target.value.replace(/\D/g, "").slice(0, 8); setPostalCode(digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits); }} placeholder="CEP (00000-000)" aria-label="CEP" inputMode="numeric" maxLength={9} />
           <fieldset className="flex h-10 items-center gap-4 rounded-md border border-slate-200 bg-white px-3" aria-label="Tipo de área"><legend className="sr-only">Tipo de área</legend><label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="radio" name="areaType" value="urban" checked={areaType === "urban"} onChange={() => setAreaType("urban")} className="h-4 w-4 accent-indigo-600" /> Área urbana</label><label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"><input type="radio" name="areaType" value="rural" checked={areaType === "rural"} onChange={() => setAreaType("rural")} className="h-4 w-4 accent-indigo-600" /> Área rural</label></fieldset>
           <Input value={complement} onChange={(e) => setComplement(e.target.value)} placeholder="Complemento (opcional)" aria-label="Complemento" />

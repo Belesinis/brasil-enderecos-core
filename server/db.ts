@@ -177,7 +177,7 @@ export async function getAddressById(id: number) {
   return result[0];
 }
 
-export async function createAddressFromDetails(input: { cityId: number; streetTypeId: number; streetName: string; neighborhoodName?: string; postalCode?: string; number: string; complement?: string; referencePoint?: string; latitude?: string; longitude?: string; locationSource?: "gps" | "manual" | "geocoded" | "imported"; areaType?: "urban" | "rural"; createdBy?: number }) {
+export async function createAddressFromDetails(input: { cityId: number; streetTypeId: number; streetName: string; neighborhoodName?: string; postalCode?: string; number: string; propertyType?: "house" | "store" | "apartment" | "other"; apartmentNumber?: string; complement?: string; referencePoint?: string; latitude?: string; longitude?: string; locationSource?: "gps" | "manual" | "geocoded" | "imported"; areaType?: "urban" | "rural"; createdBy?: number }) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
   const normalize = normalizeAddressName;
@@ -200,7 +200,7 @@ export async function createAddressFromDetails(input: { cityId: number; streetTy
     streetId = Number(streetResult[0].insertId);
     await recordAudit({ entityType: "streets", entityId: streetId, action: "create", actorUserId: input.createdBy, afterData: { cityId: input.cityId, name: input.streetName.trim() } });
   }
-  return createAddress({ streetId, postalCode: input.postalCode, number: input.number.trim(), complement: input.complement?.trim(), referencePoint: input.referencePoint?.trim(), latitude: input.latitude, longitude: input.longitude, locationSource: input.locationSource ?? "manual", areaType: input.areaType ?? "urban", createdBy: input.createdBy });
+  return createAddress({ streetId, postalCode: input.postalCode, number: input.number.trim(), propertyType: input.propertyType ?? "house", apartmentNumber: input.apartmentNumber?.trim() || undefined, complement: input.complement?.trim(), referencePoint: input.referencePoint?.trim(), latitude: input.latitude, longitude: input.longitude, locationSource: input.locationSource ?? "manual", areaType: input.areaType ?? "urban", createdBy: input.createdBy });
 }
 
 export async function createAddress(input: typeof addresses.$inferInsert) {
