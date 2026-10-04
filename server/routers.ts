@@ -3,7 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { createAddress, createAddressFromDetails, getAddressById, getBrazilHierarchy, getCitiesBySubdivision, getHierarchyChildren, getStreetTypes, restoreAddress, searchAddresses, searchNeighborhoods, searchStreets, softDeleteAddress, updateAddress } from "./db";
+import { createAddress, createAddressFromDetails, getAddressById, getBrazilHierarchy, getCitiesBySubdivision, getHierarchyChildren, getStreetTypes, listRecentAddressHistory, restoreAddress, searchAddresses, searchNeighborhoods, searchStreets, softDeleteAddress, updateAddress } from "./db";
 import { addresses } from "../drizzle/schema";
 import { archiveCatalog, createCatalog, listCatalog, restoreCatalog, updateCatalog, type CatalogEntity } from "./catalogAdmin";
 
@@ -35,6 +35,7 @@ export const appRouter = router({
       limit: z.number().int().min(1).max(100).default(25),
       offset: z.number().int().min(0).default(0),
     })).query(({ input }) => searchAddresses(input)),
+    addressHistory: protectedProcedure.input(z.object({ limit: z.number().int().min(1).max(50).default(12) })).query(({ input }) => listRecentAddressHistory(input.limit)),
     hierarchyChildren: publicProcedure.input(z.object({ type: z.enum(["cities", "neighborhoods", "streets"]), parentId: z.number().int().positive() })).query(({ input }) => getHierarchyChildren(input.type, input.parentId)),
     catalogList: adminProcedure.input(z.object({ entity: z.enum(["subdivisions", "cities", "neighborhoods", "street_types", "streets"]), parentId: z.number().int().positive().optional() })).query(({ input }) => listCatalog(input.entity, input.parentId)),
     catalogCreate: adminProcedure.input(z.discriminatedUnion("entity", [
@@ -70,6 +71,10 @@ export const appRouter = router({
       number: z.string().trim().min(1).max(24),
       propertyType: z.enum(["house", "store", "apartment", "other"]).default("house"),
       apartmentNumber: z.string().trim().max(24).optional(),
+      buildingBlock: z.string().trim().max(24).optional(),
+      tower: z.string().trim().max(24).optional(),
+      floorNumber: z.string().trim().max(24).optional(),
+      commercialUnit: z.string().trim().max(48).optional(),
       complement: z.string().trim().max(160).optional(),
       referencePoint: z.string().trim().max(240).optional(),
       latitude: coordinate,
@@ -85,6 +90,10 @@ export const appRouter = router({
       referencePoint: z.string().trim().max(240).nullable().optional(),
       propertyType: z.enum(["house", "store", "apartment", "other"]).optional(),
       apartmentNumber: z.string().trim().max(24).nullable().optional(),
+      buildingBlock: z.string().trim().max(24).nullable().optional(),
+      tower: z.string().trim().max(24).nullable().optional(),
+      floorNumber: z.string().trim().max(24).nullable().optional(),
+      commercialUnit: z.string().trim().max(48).nullable().optional(),
       latitude: coordinate,
       longitude: coordinate,
       locationSource: z.enum(["gps", "manual", "geocoded", "imported"]).nullable().optional(),
