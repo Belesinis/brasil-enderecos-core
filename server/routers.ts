@@ -62,7 +62,7 @@ export const appRouter = router({
       locationSource: z.enum(["gps", "manual", "geocoded", "imported"]).optional(),
       areaType: z.enum(["urban", "rural"]).default("urban"),
     })).mutation(({ input, ctx }) => createAddress({ ...input, createdBy: ctx.user.id } as typeof addresses.$inferInsert)),
-    createAddressFromDetails: adminProcedure.input(z.object({
+    createAddressFromDetails: protectedProcedure.input(z.object({
       cityId: z.number().int().positive(),
       streetTypeId: z.number().int().positive(),
       streetName: z.string().trim().min(1).max(180),
