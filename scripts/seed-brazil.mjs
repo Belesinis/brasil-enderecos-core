@@ -11,7 +11,7 @@ const [[country]] = await connection.execute(`SELECT id FROM countries WHERE iso
 
 const types = [
   ["RUA", "Rua", "R."], ["AVENIDA", "Avenida", "Av."], ["VIELA", "Viela", "Vla."],
-  ["ALAMEDA", "Alameda", "Al."], ["TRAVESSA", "Travessa", "Tv."], ["RODOVIA", "Rodovia", "Rod."], ["ESTRADA", "Estrada", "Est."],
+  ["ALAMEDA", "Alameda", "Al."], ["TRAVESSA", "Travessa", "Tv."], ["RODOVIA", "Rodovia", "Rod."], ["ESTRADA", "Estrada", "Est."], ["RUA_PROJETADA", "Rua Projetada", "R. Proj."],
 ];
 for (const [code, name, abbreviation] of types) {
   await connection.execute(`INSERT INTO street_types (code, name, abbreviation) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name), abbreviation=VALUES(abbreviation)`, [code, name, abbreviation]);

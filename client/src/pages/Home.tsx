@@ -25,6 +25,7 @@ export default function Home() {
   const [neighborhoodName, setNeighborhoodName] = useState("");
   const [isNeighborhoodFocused, setIsNeighborhoodFocused] = useState(false);
   const [number, setNumber] = useState("");
+  const [noNumber, setNoNumber] = useState(false);
   const [propertyType, setPropertyType] = useState<"house" | "store" | "apartment" | "other">("house");
   const [apartmentNumber, setApartmentNumber] = useState("");
   const [buildingBlock, setBuildingBlock] = useState("");
@@ -69,7 +70,7 @@ export default function Home() {
   const create = trpc.locations.createAddressFromDetails.useMutation({
     onSuccess: () => {
       toast.success("Endereço criado e auditado para o usuário autenticado.");
-      setStreetName(""); setNeighborhoodName(""); setNumber(""); setPropertyType("house"); setApartmentNumber(""); setBuildingBlock(""); setTower(""); setFloorNumber(""); setCommercialUnit(""); setPostalCode(""); setComplement(""); setReferencePoint(""); setLatitude(""); setLongitude("");
+      setStreetName(""); setNeighborhoodName(""); setNumber(""); setNoNumber(false); setPropertyType("house"); setApartmentNumber(""); setBuildingBlock(""); setTower(""); setFloorNumber(""); setCommercialUnit(""); setPostalCode(""); setComplement(""); setReferencePoint(""); setLatitude(""); setLongitude("");
       results.refetch();
       history.refetch();
     },
@@ -168,7 +169,7 @@ export default function Home() {
 
   const clearManualAddress = () => {
     setStateId(""); setStateName(""); setCityId(""); setCityName(""); setStreetTypeId(""); setStreetName("");
-    setNeighborhoodName(""); setNumber(""); setPropertyType("house"); setApartmentNumber(""); setBuildingBlock(""); setTower(""); setFloorNumber(""); setCommercialUnit(""); setAreaType("urban"); setPostalCode(""); setComplement("");
+    setNeighborhoodName(""); setNumber(""); setNoNumber(false); setPropertyType("house"); setApartmentNumber(""); setBuildingBlock(""); setTower(""); setFloorNumber(""); setCommercialUnit(""); setAreaType("urban"); setPostalCode(""); setComplement("");
     setReferencePoint(""); setLatitude(""); setLongitude(""); setLocationSource("manual"); setHasTriedSubmit(false);
     markerRef.current?.setMap(null); markerRef.current = null;
     toast.success("Formulário limpo.");
@@ -186,7 +187,7 @@ export default function Home() {
           <div className="relative flex gap-2 md:col-span-3"><select required value={streetTypeId} className={`h-10 w-28 shrink-0 rounded-md sm:w-32 border border-slate-200 bg-white px-3 text-sm ${hasTriedSubmit && !streetTypeId ? "border-rose-400 ring-1 ring-rose-200" : ""}`} onChange={(e) => setStreetTypeId(e.target.value)} aria-label="Tipo de logradouro"><option value="">Tipo</option>{streetTypes.data?.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}</select>
             <div className="relative min-w-0 flex-1"><Input required value={streetName} className={hasTriedSubmit && !streetName.trim() ? "border-rose-400 ring-1 ring-rose-200" : ""} onChange={(e) => setStreetName(e.target.value)} placeholder="Nome do logradouro" aria-label="Nome do logradouro" />{streets.data?.length ? <div className="absolute z-20 mt-1 max-h-44 w-full overflow-auto rounded-md border border-slate-200 bg-white p-1 shadow-lg">{streets.data.map((street) => <button type="button" key={street.id} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-indigo-50" onClick={() => { setStreetName(street.name); if (street.postalCode && !postalCode) setPostalCode(street.postalCode); }}>{street.name}{street.postalCode ? <span className="ml-2 text-slate-400">{street.postalCode}</span> : null}</button>)}</div> : null}</div>
           </div>
-          <Input required value={number} className={hasTriedSubmit && !number.trim() ? "border-rose-400 ring-1 ring-rose-200" : ""} onChange={(e) => setNumber(e.target.value)} placeholder="Número ou s/n" aria-label="Número ou sem número" />
+          <div className="flex min-w-0 flex-col gap-2"><div className="flex min-w-0 gap-2"><Input required disabled={noNumber} value={noNumber ? "s/n" : number} className={`min-w-0 flex-1 ${hasTriedSubmit && !number.trim() ? "border-rose-400 ring-1 ring-rose-200" : ""}`} onChange={(e) => setNumber(e.target.value)} placeholder="Número" aria-label="Número" /><label className="flex shrink-0 cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700"><input type="checkbox" checked={noNumber} onChange={(e) => { const checked = e.target.checked; setNoNumber(checked); setNumber(checked ? "s/n" : ""); }} className="h-4 w-4 accent-indigo-600" /> Sem número (s/n)</label></div></div>
           <div className="flex min-w-0 gap-2"><select value={propertyType} onChange={(e) => { const value = e.target.value as typeof propertyType; setPropertyType(value); if (value !== "apartment") { setApartmentNumber(""); setBuildingBlock(""); setTower(""); setFloorNumber(""); } if (value !== "store" && value !== "other") setCommercialUnit(""); }} className="h-10 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 text-sm" aria-label="Tipo de imóvel"><option value="house">Casa</option><option value="store">Loja</option><option value="apartment">Apartamento</option><option value="other">Outro</option></select>{propertyType === "apartment" ? <Input value={apartmentNumber} onChange={(e) => setApartmentNumber(e.target.value)} placeholder="Nº apto" aria-label="Número do apartamento" className={`min-w-0 flex-1 ${hasTriedSubmit && !apartmentNumber.trim() ? "border-rose-400 ring-1 ring-rose-200" : ""}`} /> : null}</div>
           {propertyType === "apartment" ? <><Input value={buildingBlock} onChange={(e) => setBuildingBlock(e.target.value)} placeholder="Bloco (opcional)" aria-label="Bloco" /><Input value={tower} onChange={(e) => setTower(e.target.value)} placeholder="Torre (opcional)" aria-label="Torre" /><Input value={floorNumber} onChange={(e) => setFloorNumber(e.target.value)} placeholder="Andar (opcional)" aria-label="Andar" /></> : propertyType === "store" || propertyType === "other" ? <Input value={commercialUnit} onChange={(e) => setCommercialUnit(e.target.value)} placeholder="Sala, loja ou conjunto (opcional)" aria-label="Sala, loja ou conjunto" /> : null}
           <Input value={postalCode} onChange={(e) => { const digits = e.target.value.replace(/\D/g, "").slice(0, 8); setPostalCode(digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits); }} placeholder="CEP (00000-000)" aria-label="CEP" inputMode="numeric" maxLength={9} />
