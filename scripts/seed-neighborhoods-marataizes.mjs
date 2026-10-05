@@ -1,12 +1,12 @@
 import mysql from "mysql2/promise";
 
 const SOURCE = "https://www.marataizes.es.gov.br/pagina/ler/1001/aspectos_gerais";
+const CAPINZAL_SOURCE = "https://incaper.es.gov.br/media/incaper/proater/municipios/Marataizes.pdf";
 const neighborhoods = [
   "Praia do Pontal", "Barra do Itapemirim", "Areias Negras", "Filemon Tenório", "Candinha", "Monte Carlo", "Wandamaria", "Cidade Nova", "Acapulco", "Queimada",
   "Santa Rita", "Jardim Balneário Elza", "Arraias", "Miramar", "Baixa dos Ubás", "Centro", "Belvedere", "Santa Tereza", "Elza", "Esplanada", "Esplanada II", "Baixa Bonita", "Alvorada", "Bela Vista", "Belo Horizonte", "Novo Horizonte", "Belo Horizonte Otil", "Lourdes I", "Lourdes II", "Atlântico", "Fátima", "Dona Ruth", "Nossa Senhora Aparecida", "Xodó", "Petrolândia", "Nova Marataízes",
 ];
 const ruralLocalities = ["Jacarandá", "Brejo dos Patos", "Fazenda Canaã", "Jaboti", "Nova Jerusalém", "São João do Jaboti", "Sol Nascente", "Dantas", "Boa Vista do Sul", "Siri", "Cações", "Capinzal"];
-const userRequestedRuralLocalities = new Set(["Capinzal"]);
 const entries = [...neighborhoods.map((name) => ({ name, areaType: "urban" })), ...ruralLocalities.map((name) => ({ name, areaType: "rural" }))];
 
 const normalize = (value) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
@@ -41,7 +41,7 @@ try {
     );
     await db.execute(
       "INSERT INTO address_audit_logs (entityType, entityId, action, actorUserId, afterData, reason) VALUES ('neighborhoods', ?, 'create', NULL, ?, ?)",
-      [Number(result.insertId), JSON.stringify({ cityId: city.id, name, normalizedName, areaType, source: userRequestedRuralLocalities.has(name) ? "Solicitação do usuário" : SOURCE }), userRequestedRuralLocalities.has(name) ? "Inclusão solicitada pelo usuário como bairro rural de Marataízes/ES" : `Importação oficial de bairros e localidades rurais de Marataízes/ES: ${SOURCE}`],
+      [Number(result.insertId), JSON.stringify({ cityId: city.id, name, normalizedName, areaType, source: name === "Capinzal" ? CAPINZAL_SOURCE : SOURCE }), name === "Capinzal" ? `Inclusão de Capinzal como comunidade rural conforme PROATER/Incaper: ${CAPINZAL_SOURCE}` : `Importação oficial de bairros e localidades rurais de Marataízes/ES: ${SOURCE}`],
     );
   }
 
