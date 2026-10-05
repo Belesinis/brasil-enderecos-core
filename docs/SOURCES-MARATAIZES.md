@@ -9,6 +9,10 @@
   - Lista Capinzal entre as principais comunidades rurais do município.
 - Espírito Santo Notícias, pavimentação Capinzal–ES-060: https://www.espiritosantonoticias.com.br/marataizes-pavimentacao-asfaltica-avanca-no-trecho-capinzal-x-es-060/
   - Confirma Capinzal como comunidade e registra a ligação viária até a ES-060.
+- Prefeitura de Marataízes, edital de georreferenciamento: https://www.marataizes.es.gov.br/uploads/licitacao/3334-pregao-presencial-n-000034-2019-1560861174.pdf
+  - Registra “Estrada Jacarandá” e “Estrada Capinzal” nas referências viárias municipais.
+- A Gazeta, acidente na localidade: https://www.agazeta.com.br/es/transito/adolescente-morre-em-acidente-em-marataizes-apos-pegar-motoneta-escondido-0825
+  - Confirma o uso do nome Estrada de Jacarandá em Capinzal.
 - Coordenadas de Capinzal: ainda não foram gravadas no catálogo; as fontes consultadas não fornecem um centroide público confiável da localidade. O cadastro aceita coordenadas capturadas pelo usuário ou selecionadas no mapa.
 - OpenStreetMap / Overpass: https://www.openstreetmap.org/ e https://overpass.private.coffee/api/interpreter
   - Fonte dos logradouros nomeados e coordenadas centrais importados para Marataízes.
